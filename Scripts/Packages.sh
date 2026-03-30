@@ -61,7 +61,6 @@ UPDATE_PACKAGE "passwall2" "Openwrt-Passwall/openwrt-passwall2" "main" "pkg"
 # 新增插件
 UPDATE_PACKAGE "smartdns" "pymumu/luci-app-smartdns" "master" "pkg"
 UPDATE_PACKAGE "adguardhome" "AUKipsey/luci-app-adguardhome" "main" "pkg"
-UPDATE_PACKAGE "docker" "lisaac/luci-app-docker" "master" "pkg"
 UPDATE_PACKAGE "pbr" "AsaraKitty/luci-app-pbr" "master"
 UPDATE_PACKAGE "open-app-filter" "destan19/OpenAppFilter" "master" "" "luci-app-appfilter oaf"
 UPDATE_PACKAGE "ttyd" "lisaac/luci-app-ttyd" "master"
