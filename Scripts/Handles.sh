@@ -99,3 +99,11 @@ if [ -d *"luci-app-netspeedtest"* ]; then
 
 	cd $PKG_PATH && echo "netspeedtest has been fixed!"
 fi
+
+# 修复luci-app-dockerman版本号问题 (移除v前缀以符合APK规范)
+DOCKERMAN_FILE="../feeds/luci/applications/luci-app-dockerman/Makefile"
+if [ -f "$DOCKERMAN_FILE" ]; then
+	echo " "
+	sed -i 's/PKG_VERSION:=v/PKG_VERSION:=/g' "$DOCKERMAN_FILE"
+	cd $PKG_PATH && echo "luci-app-dockerman version has been fixed!"
+fi
