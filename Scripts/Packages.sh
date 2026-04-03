@@ -136,7 +136,9 @@ UPDATE_PACKAGE() {
     for NAME in "${PKG_LIST[@]}"; do
         [ -z "$NAME" ] && continue
         local FOUND_DIRS
+        set +e
         FOUND_DIRS=$(find ../feeds/luci/ ../feeds/packages/ -maxdepth 3 -type d -iname "*$NAME*" 2>/dev/null)
+        set -e
         
         if [ -n "$FOUND_DIRS" ]; then
             while read -r DIR; do
@@ -145,11 +147,14 @@ UPDATE_PACKAGE() {
         fi
     done
     
-    # 捕获 git 输出以便调试
-    local GIT_OUTPUT
-    if ! GIT_OUTPUT=$(git clone --depth=1 --single-branch --branch "$PKG_BRANCH" "https://github.com/${PKG_REPO}.git" 2>&1); then
-        echo "  [错误] 克隆失败: https://github.com/${PKG_REPO}.git"
-        echo "  [详情] $GIT_OUTPUT"
+    echo "  [信息] 克隆: https://github.com/${PKG_REPO}.git"
+    set +e
+    git clone --depth=1 --single-branch --branch "$PKG_BRANCH" "https://github.com/${PKG_REPO}.git" 2>&1
+    CLONE_RESULT=$?
+    set -e
+    
+    if [ $CLONE_RESULT -ne 0 ]; then
+        echo "  [错误] 克隆失败 (exit code: $CLONE_RESULT)"
         return 1
     fi
     echo "  [完成] 从 $PKG_REPO 安装"
