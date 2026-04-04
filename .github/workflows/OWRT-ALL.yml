@@ -36,6 +36,7 @@ jobs:
         CONFIG: [X86]
         SOURCE: [VIKINGYFY/immortalwrt]
         BRANCH: [owrt]
+        DEVICE: [x86_64]
 
     #调用公用编译核心WRT-CORE.yml
     uses: ./.github/workflows/WRT-CORE.yml
