@@ -16,8 +16,8 @@ if [ -n "$LUCI_SYSTEM" ]; then
 fi
 
 LUCI_STATUS=$(find ./feeds/luci/modules/luci-mod-status/ -type f -name "10_system.js" 2>/dev/null)
-if [ -n "$LUCI_STATUS" ]; then
-    sed -i "s/(\(luciversion || ''\))/(\1) + (' \/ ${WRT_MARK:-OWRT}-${WRT_DATE:-unknown}')/g" $LUCI_STATUS
+if [ -n "$LUCI_STATUS" ] && grep -q "luciversion" "$LUCI_STATUS" 2>/dev/null; then
+    sed -i "s/(\(luciversion || ''\))/(\1) + (' \/ ${WRT_MARK:-OWRT}-${WRT_DATE:-unknown}')/g" "$LUCI_STATUS"
 fi
 
 WIFI_SH=$(find ./target/linux/{mediatek/filogic,qualcommax}/base-files/etc/uci-defaults/ -type f -name "*set-wireless.sh" 2>/dev/null)
