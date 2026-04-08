@@ -24,6 +24,7 @@ on:
 #CI权限
 permissions:
   contents: write
+  actions: write
 
 #CI任务
 jobs:
