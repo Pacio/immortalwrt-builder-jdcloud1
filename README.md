@@ -175,7 +175,7 @@
 # 主要操作:
 1. 移除 luci-app-attendedsysupgrade
 2. 修改默认主题
-3. 修改默认 IP 地址 (192.168.10.1)
+3. 修改默认 IP 地址 (192.168.192.1)
 4. 修改默认主机名
 5. 修改默认 WIFI 名称/密码
 6. 添加编译日期标识
@@ -330,7 +330,7 @@ curl, htop, iperf3, openssh, coremark, mmc-utils
 |------|--------|
 | 主题 | aurora |
 | 语言 | 中文 (zh_Hans) |
-| IP 地址 | 192.168.10.1 |
+| IP 地址 | 192.168.192.1 |
 | 主机名 | OWRT |
 | WIFI 名称 | OWRT |
 | WIFI 密码 | 12345678 |

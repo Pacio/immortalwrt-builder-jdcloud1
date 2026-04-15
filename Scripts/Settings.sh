@@ -10,7 +10,7 @@ fi
 
 LUCI_SYSTEM=$(find ./feeds/luci/modules/luci-mod-system/ -type f -name "flash.js" 2>/dev/null)
 if [ -n "$LUCI_SYSTEM" ]; then
-    sed -i "s/192\.168\.[0-9]*\.[0-9]*/${WRT_IP:-192.168.10.1}/g" $LUCI_SYSTEM
+    sed -i "s/192\.168\.[0-9]*\.[0-9]*/${WRT_IP:-192.168.192.1}/g" $LUCI_SYSTEM
 fi
 
 LUCI_STATUS=$(find ./feeds/luci/modules/luci-mod-status/ -type f -name "10_system.js" 2>/dev/null)
@@ -32,7 +32,7 @@ fi
 
 CFG_FILE="./package/base-files/files/bin/config_generate"
 if [ -f "$CFG_FILE" ]; then
-    sed -i "s/192\.168\.[0-9]*\.[0-9]*/${WRT_IP:-192.168.10.1}/g" "$CFG_FILE"
+    sed -i "s/192\.168\.[0-9]*\.[0-9]*/${WRT_IP:-192.168.192.1}/g" "$CFG_FILE"
     sed -i "s/hostname='.*'/hostname='${WRT_NAME:-OWRT}'/g" "$CFG_FILE"
 fi
 
