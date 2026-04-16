@@ -122,6 +122,18 @@ if dir_exists "luci-app-netspeedtest"; then
     cd "$PKG_PATH" && echo "netspeedtest has been fixed!"
 fi
 
+# 修复cups编译失败 - 改用主源自 cups (small8 版本存在 PKG_MD5SUM + 已废弃的 configure 选项问题)
+# 在 feeds install 之后，如果 ./package/cups 来自 small8，则删除并从主源重新安装
+if [ -d "./package/cups" ]; then
+    PKG_CUPS_ORIGIN=$(readlink ./package/cups 2>/dev/null || echo "")
+    if echo "$PKG_CUPS_ORIGIN" | grep -q "small8\|jell"; then
+        echo "  [修复] 检测到 small8 cups，准备替换为主源 cups"
+        rm -rf ./package/cups
+        ./scripts/feeds install cups luci-app-cupsd cups-utils libcups 2>/dev/null || true
+        echo "  [完成] cups 已替换为主源版本"
+    fi
+fi
+
 # 修复luci-app-dockerman版本号问题 (移除v前缀以符合APK规范)
 DOCKER_MAN_FILE=$(find . -path "*/luci-app-dockerman/Makefile" -type f 2>/dev/null | head -1)
 if [ -n "$DOCKER_MAN_FILE" ] && [ -f "$DOCKER_MAN_FILE" ]; then

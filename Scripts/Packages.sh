@@ -60,16 +60,17 @@ REMOVE_CONFLICT_PACKAGES() {
         fi
     done
     
-    # 批量删除工具包
-    if [ -d "./feeds/packages/utils/cups" ]; then
-        rm -rf "./feeds/packages/utils/cups"
-        echo "  [删除] feeds/packages/utils/cups"
-    fi
+    # 批量删除工具包 (cups 已改用主源，small8 版本存在编译问题)
+    # if [ -d "./feeds/packages/utils/cups" ]; then
+    #     rm -rf "./feeds/packages/utils/cups"
+    #     echo "  [删除] feeds/packages/utils/cups"
+    # fi
     
     # 批量删除 jell/small8 feed 中的冲突包
     local SMALL8_CONFLICTS=(
         "ppp" "firewall" "dae" "daed" "daed-next" "libnftnl" "nftables" 
         "dnsmasq" "luci-app-alist" "alist" "opkg" "smartdns" "luci-app-smartdns" "easytier"
+        "cups" "luci-app-cupsd" "p910nd" "luci-app-p910nd"
     )
     
     for pkg in "${SMALL8_CONFLICTS[@]}"; do
@@ -187,8 +188,7 @@ INSTALL_FROM_FEEDS() {
         luci-app-ddns-go taskd luci-lib-xterm luci-lib-taskd luci-app-store quickstart \
         luci-app-quickstart luci-app-istorex luci-app-cloudflarespeedtest netdata luci-app-netdata \
         lucky luci-app-lucky luci-app-openclash luci-app-homeproxy nikki luci-app-nikki \
-        oaf open-app-filter luci-app-oaf \
-        msd_lite luci-app-msd_lite cups luci-app-cupsd p910nd luci-app-p910nd \
+        oaf open-app-filter luci-app-oaf msd_lite luci-app-msd_lite \
         luci-theme-argon luci-app-argon-config luci-theme-argone luci-app-argone-config luci-theme-aurora \
         luci-app-passwall luci-app-passwall2 luci-app-smartdns \
         luci-app-diskman luci-app-easytier luci-app-openlist2 \
