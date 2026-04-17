@@ -224,7 +224,7 @@ UPDATE_VERSION() {
         
         local PKG_URL=$([[ "$OLD_URL" == *"releases"* ]] && echo "${OLD_URL%/}/$OLD_FILE" || echo "${OLD_URL%/}")
         
-        local NEW_VER=$(echo $PKG_TAG | sed -E 's/[^0-9]+/\./g; s/^\.|\.$//g')
+        local NEW_VER=$(echo $PKG_TAG | sed -E 's/[^0-9]+/./g; s/^\.|\.$//g')
         local NEW_URL=$(echo $PKG_URL | sed "s/\$(PKG_VERSION)/$NEW_VER/g; s/\$(PKG_NAME)/$PKG_NAME/g")
         local NEW_HASH=$(curl -sL "$NEW_URL" | sha256sum | cut -d ' ' -f 1)
         
@@ -239,6 +239,40 @@ UPDATE_VERSION() {
             echo "  [跳过] $PKG_NAME 已是最新版本"
         fi
     done
+}
+
+# ============================================================================
+# 第六部分：修复第三方包问题 (luci-app-store 版本号格式修复)
+# ============================================================================
+
+FIX_PACKAGE_ISSUES() {
+    echo ">>> 修复第三方包问题..."
+    
+    # 修复 luci-app-store 版本号格式
+    # 错误版本: 0.1.32-1-r66 (包含 r66 导致版本号无效)
+    # 修复为: PKG_VERSION:=0.1.32, PKG_RELEASE:=1
+    local LUCI_APP_STORE_MAKEFILE=$(find ./ ../feeds/ -path "*/luci-app-store/Makefile" 2>/dev/null | head -1)
+    
+    if [ -n "$LUCI_APP_STORE_MAKEFILE" ] && [ -f "$LUCI_APP_STORE_MAKEFILE" ]; then
+        echo "  [修复] luci-app-store 版本号格式"
+        
+        # 检查是否需要修复 (版本号包含 r 或超出标准格式)
+        local CURRENT_VERSION=$(grep -Po "PKG_VERSION:=\K.*" "$LUCI_APP_STORE_MAKEFILE" || echo "")
+        
+        if [[ "$CURRENT_VERSION" =~ r ]]; then
+            # 提取版本号和发布号
+            local VER_NUM=$(echo "$CURRENT_VERSION" | sed -E 's/-[0-9]+-r[0-9]+//g')
+            local RELEASE_NUM=$(echo "$CURRENT_VERSION" | grep -oP '(?<=-)[0-9]+(?=-r)' || echo "1")
+            
+            sed -i "s|PKG_VERSION:=.*|PKG_VERSION:=$VER_NUM|" "$LUCI_APP_STORE_MAKEFILE"
+            sed -i "s|PKG_RELEASE:=.*|PKG_RELEASE:=$RELEASE_NUM|" "$LUCI_APP_STORE_MAKEFILE" 2>/dev/null || \
+                sed -i "/PKG_VERSION/a PKG_RELEASE:=$RELEASE_NUM" "$LUCI_APP_STORE_MAKEFILE"
+            
+            echo "    版本: $CURRENT_VERSION -> $VER_NUM (release: $RELEASE_NUM)"
+        fi
+    fi
+    
+    echo "  [完成] 包问题修复"
 }
 
 # ============================================================================
@@ -261,7 +295,10 @@ main() {
     # Step 3: 从 feeds 安装插件
     INSTALL_FROM_FEEDS
     
-    # Step 4: 安装 small8 没有的自定义插件
+    # Step 4: 修复第三方包问题 (版本号格式等)
+    FIX_PACKAGE_ISSUES
+    
+    # Step 5: 安装 small8 没有的自定义插件
     echo ""
     echo ">>> 安装自定义插件 (small8 没有的)..."
     # 主题
@@ -271,7 +308,7 @@ main() {
     UPDATE_PACKAGE "netspeedtest" "sirpdboy/netspeedtest" "main" "" "homebox speedtest"
     UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
     
-    # Step 5: 自动更新版本 (可选，针对 sing-box)
+    # Step 6: 自动更新版本 (可选，针对 sing-box)
     # UPDATE_VERSION "sing-box"
     
     echo ""
@@ -290,4 +327,5 @@ else
     export -f INSTALL_FROM_FEEDS
     export -f UPDATE_PACKAGE
     export -f UPDATE_VERSION
+    export -f FIX_PACKAGE_ISSUES
 fi
