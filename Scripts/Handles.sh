@@ -134,12 +134,19 @@ if [ -d "./package/cups" ]; then
     fi
 fi
 
+# tcping 编译详细日志
+TCPING_PKG=$(find . -path "*/tcping/Makefile" -type f 2>/dev/null | head -1)
+if [ -n "$TCPING_PKG" ]; then
+    echo "  [DEBUG] tcping Makefile path: $TCPING_PKG"
+    echo "  [DEBUG] tcping Makefile content:"
+    cat "$TCPING_PKG" | sed 's/^/    /'
+fi
+
 # 修复luci-app-store版本号问题 (移除r前缀以符合APK规范)
 LUCI_STORE_FILE=$(find . -path "*/luci-app-store/Makefile" -type f 2>/dev/null | head -1)
 if [ -n "$LUCI_STORE_FILE" ] && [ -f "$LUCI_STORE_FILE" ]; then
     echo "Found luci-app-store at: $LUCI_STORE_FILE"
-    # APK不允许版本号中包含r前缀的revision，修复PKG_VERSION和PKG_RELEASE
-    sed -i 's/\(PKG_VERSION:=.*\)-r/\1./g; s/PKG_RELEASE:=r\([0-9]\)/PKG_RELEASE:=\1/g' "$LUCI_STORE_FILE"
+    sed -i '/PKG_SOURCE_VERSION:=/d' "$LUCI_STORE_FILE"
     cd "$PKG_PATH" && echo "luci-app-store version has been fixed!"
 fi
 
