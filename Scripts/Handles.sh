@@ -145,11 +145,13 @@ if [ -f "$TCPING_PKG" ]; then
     fi
 fi
 
-# 修复luci-app-store版本号问题 (移除r前缀以符合APK规范)
+# 修复luci-app-store版本号问题 (符合APK规范)
 LUCI_STORE_FILE=$(find . -path "*/luci-app-store/Makefile" -type f 2>/dev/null | head -1)
 if [ -n "$LUCI_STORE_FILE" ] && [ -f "$LUCI_STORE_FILE" ]; then
     echo "Found luci-app-store at: $LUCI_STORE_FILE"
     sed -i '/PKG_SOURCE_VERSION:=/d' "$LUCI_STORE_FILE"
+    sed -i 's/PKG_VERSION:=\(.*\)-\([0-9]\)/PKG_VERSION:=\1/g' "$LUCI_STORE_FILE"
+    sed -i 's/PKG_RELEASE:=$/PKG_RELEASE:=1/g' "$LUCI_STORE_FILE"
     cd "$PKG_PATH" && echo "luci-app-store version has been fixed!"
 fi
 
