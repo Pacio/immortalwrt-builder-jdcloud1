@@ -6,19 +6,7 @@
 set -e
 
 # ============================================================================
-# 全局变量
-# ============================================================================
-
-# 从 PassWall feed 安装的代理插件列表（避免被 small8 覆盖）
-declare -a PASSWALL_PKGS=(
-    chinadns-ng dns2socks geoview hysteria ipt2socks microsocks
-    shadow-tls shadowsocks-libev shadowsocks-rust shadowsocksr-libev simple-obfs
-    sing-box tuic-client v2ray-geodata v2ray-plugin xray-core xray-plugin
-    naiveproxy tcping trojan-plus
-)
-
-# ============================================================================
-# 第一部分：冲突包批量删除 (借鉴外部作者的 remove_unwanted_packages)
+# 第一部分：冲突包批量删除
 # ============================================================================
 
 REMOVE_CONFLICT_PACKAGES() {
@@ -72,17 +60,15 @@ REMOVE_CONFLICT_PACKAGES() {
         fi
     done
     
-    # 批量删除工具包 (cups 已改用主源，small8 版本存在编译问题)
-    # if [ -d "./feeds/packages/utils/cups" ]; then
-    #     rm -rf "./feeds/packages/utils/cups"
-    #     echo "  [删除] feeds/packages/utils/cups"
-    # fi
-    
     # 批量删除 jell/small8 feed 中的冲突包
     local SMALL8_CONFLICTS=(
         "ppp" "firewall" "dae" "daed" "daed-next" "libnftnl" "nftables"
         "dnsmasq" "luci-app-alist" "alist" "opkg" "smartdns" "luci-app-smartdns" "easytier"
         "cups" "luci-app-cupsd" "p910nd" "luci-app-p910nd"
+        "chinadns-ng" "dns2socks" "geoview" "hysteria" "ipt2socks" "microsocks"
+        "shadow-tls" "shadowsocks-libev" "shadowsocks-rust" "shadowsocksr-libev" "simple-obfs"
+        "sing-box" "tuic-client" "v2ray-geodata" "v2ray-plugin" "xray-core" "xray-plugin"
+        "naiveproxy" "tcping" "trojan-plus"
     )
     
     for pkg in "${SMALL8_CONFLICTS[@]}"; do
@@ -91,7 +77,7 @@ REMOVE_CONFLICT_PACKAGES() {
             echo "  [删除] feeds/small8/$pkg"
         fi
     done
-    
+
     # 删除 iStore
     if [ -d "./package/istore" ]; then
         rm -rf "./package/istore"
@@ -102,7 +88,7 @@ REMOVE_CONFLICT_PACKAGES() {
 }
 
 # ============================================================================
-# 第二部分：Feeds 机制支持 (借鉴外部作者的 feeds.sh)
+# 第二部分：Feeds 机制支持
 # ============================================================================
 
 ADD_THIRD_PARTY_FEEDS() {
@@ -120,19 +106,17 @@ ADD_THIRD_PARTY_FEEDS() {
         echo "  [添加] small8 feed (jell)"
     fi
     
-    # 添加 PassWall feed (代理类插件)
-    if ! grep -q "openwrt-passwall\|passwall" feeds.conf.default; then
-        echo "src-git passwall https://github.com/Openwrt-Passwall/openwrt-passwall;main" >> feeds.conf.default
-        echo "  [添加] passwall feed"
+    # 添加 PassWall 核心代理包 feed
+    if ! grep -q "passwall_packages" feeds.conf.default; then
+        echo "src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages;main" >> feeds.conf.default
+        echo "  [添加] passwall_packages feed (核心代理引擎)"
     fi
-    
-    # 更新 feeds
-    ./scripts/feeds update -a
-    echo "  [完成] feeds 更新"
+
+    echo "  [完成] 添加第三方 feeds"
 }
 
 # ============================================================================
-# 第三部分：安装第三方插件 (保留原有逻辑 + 增强)
+# 第三部分：安装第三方插件
 # ============================================================================
 
 UPDATE_PACKAGE() {
@@ -185,21 +169,25 @@ UPDATE_PACKAGE() {
 }
 
 # ============================================================================
-# 第四部分：Feeds 安装函数 (借鉴外部作者的 install_small8)
+# 第四部分：Feeds 安装函数
 # ============================================================================
 
 INSTALL_FROM_FEEDS() {
     echo ">>> 从 feeds 安装第三方包..."
-    
-    # 确保 passwall feed 的包优先于 small8
-    # 先从 small8 删除将要从 passwall 安装的代理插件，避免包解析时被 small8 覆盖
-    for pkg in "${PASSWALL_PKGS[@]}"; do
-        rm -rf ./feeds/small8/$pkg 2>/dev/null || true
-    done
-    
-    # 从 PassWall 安装代理插件集合
-    ./scripts/feeds install -p passwall -f "${PASSWALL_PKGS[@]}"
-    echo "  [完成] 从 passwall 安装代理插件"
+
+    # 从 PassWall 官方克隆核心代理包到 package/ 目录
+    if [ ! -d "./package/passwall-packages" ]; then
+        echo "  [克隆] Openwrt-Passwall/openwrt-passwall-packages"
+        git clone --depth=1 --single-branch --branch main \
+            https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git \
+            ./package/passwall-packages
+        echo "  [完成] passwall_packages 核心代理包"
+    else
+        echo "  [跳过] passwall-packages 已存在"
+    fi
+
+    # 重新生成 feeds 索引（package/ 下的包需要注册到构建系统）
+    ./scripts/feeds update -i -a
 
     # 从 small8/jell 安装非代理类插件集合
     ./scripts/feeds install -p small8 -f \
@@ -217,7 +205,7 @@ INSTALL_FROM_FEEDS() {
 }
 
 # ============================================================================
-# 第五部分：版本自动更新 (借鉴外部作者的 update_package)
+# 第五部分：版本自动更新
 # ============================================================================
 
 UPDATE_VERSION() {
@@ -267,31 +255,29 @@ UPDATE_VERSION() {
 
 main() {
     echo "=========================================="
-    echo "第三方插件安装脚本 (增强版)"
+    echo "第三方插件安装脚本"
     echo "=========================================="
     
     cd $GITHUB_WORKSPACE/wrt/ 2>/dev/null || cd ./wrt/ 2>/dev/null || cd . || exit 1
-    
-    # Step 1: 添加第三方 feeds (feeds update 会重新克隆，还原所有本地修改)
-    ADD_THIRD_PARTY_FEEDS
-    
-    # Step 2: 批量删除冲突包 (在 feeds update 之后执行，删除内容不会被还原)
-    REMOVE_CONFLICT_PACKAGES
-    
-    # Step 3: 从 feeds 安装插件
-    INSTALL_FROM_FEEDS
-    
-    # Step 4: 安装 small8 没有的自定义插件
+
+    ADD_THIRD_PARTY_FEEDS          # 写入 feeds.conf.default
+
+    ./scripts/feeds update -a      # 先 clone 所有 feeds
+
+    REMOVE_CONFLICT_PACKAGES       # feeds clone 完之后再删冲突包
+
+    INSTALL_FROM_FEEDS             # 安装第三方包
+
     echo ""
     echo ">>> 安装自定义插件 (small8 没有的)..."
     # 主题
     # UPDATE_PACKAGE "aurora" "eamonxg/luci-theme-aurora" "master"
-    UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
+    # UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
     # 其他
-    UPDATE_PACKAGE "netspeedtest" "sirpdboy/netspeedtest" "main" "" "homebox speedtest"
-    UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
+    # UPDATE_PACKAGE "netspeedtest" "sirpdboy/netspeedtest" "main" "" "homebox speedtest"
+    # UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
     
-    # Step 6: 自动更新版本 (可选，针对 sing-box)
+    # 自动更新版本 (可选，针对 sing-box)
     # UPDATE_VERSION "sing-box"
     
     echo ""
